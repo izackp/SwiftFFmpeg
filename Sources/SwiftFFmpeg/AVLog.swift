@@ -6,6 +6,7 @@
 //
 
 import CFFmpeg
+import CFFmpegLogShim
 
 // MARK: - AVLog
 
@@ -31,6 +32,17 @@ public enum AVLog {
   public static func log(context: AVClassSupport, level: Level, message: String) {
     context.withUnsafeObjectPointer { ptr in
       swift_log(ptr, level.rawValue, "\(message)\n")
+    }
+  }
+
+  /// Redirect all FFmpeg log output to `callback`. The callback receives the
+  /// log level and a fully-formatted, newline-stripped message string.
+  /// Pass `nil` to restore FFmpeg's default stderr output.
+  public static func setCallback(_ callback: (@convention(c) (Int32, UnsafePointer<CChar>?) -> Void)?) {
+    if let callback {
+      swift_av_log_set_callback(callback)
+    } else {
+      swift_av_log_unset_callback()
     }
   }
 }

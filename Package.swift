@@ -17,8 +17,19 @@ let package = Package(
       pkgConfig: "libavformat"
     ),
     .target(
+      name: "CFFmpegLogShim",
+      dependencies: ["CFFmpeg"],
+      publicHeadersPath: "include",
+      cSettings: [
+        .unsafeFlags(["-I/usr/local/include"])
+      ],
+      linkerSettings: [
+        .linkedLibrary("avutil")
+      ]
+    ),
+    .target(
       name: "SwiftFFmpeg",
-      dependencies: ["CFFmpeg"]
+      dependencies: ["CFFmpeg", "CFFmpegLogShim"]
     ),
     .executableTarget(
       name: "Examples",
