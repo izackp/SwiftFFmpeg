@@ -148,4 +148,34 @@ public final class AVStream {
   public var mediaType: AVMediaType {
     codecParameters.mediaType
   }
+
+  /// Stream disposition bitmask (e.g. `AV_DISPOSITION_ATTACHED_PIC`).
+  public var disposition: Int32 {
+    native.pointee.disposition
+  }
+
+  /// Whether this stream carries an attached picture (e.g. cover art embedded in an audio file).
+  /// Mirrors the `AV_DISPOSITION_ATTACHED_PIC` flag check in `AudioFile::hasAttachedPictures`.
+  public var isAttachedPicture: Bool {
+    (native.pointee.disposition & AV_DISPOSITION_ATTACHED_PIC) != 0
+  }
+
+  /// Non-owning pointer to the `attached_pic` packet embedded in this stream.
+  /// Valid for the lifetime of this `AVStream` (and its owning `AVFormatContext`).
+  /// Do NOT pass this to `av_packet_free` — the packet is embedded in the stream struct, not heap-allocated.
+  public var attachedPic: UnsafePointer<CFFmpeg.AVPacket>? {
+    guard isAttachedPicture else { return nil }
+    return UnsafePointer(withUnsafeMutablePointer(to: &native.pointee.attached_pic) { $0 })
+  }
+
+  /// The attached picture packet for streams marked with `AV_DISPOSITION_ATTACHED_PIC`.
+  /// The returned `UnsafeBufferPointer` is valid for the lifetime of this `AVStream` (and its
+  /// owning `AVFormatContext`). Mirrors the zero-copy `avstream->attached_pic` access in
+  /// `AudioFile::visitAttachedPictures`.
+  public var attachedPicData: UnsafeBufferPointer<UInt8>? {
+    guard isAttachedPicture,
+          native.pointee.attached_pic.size > 0,
+          let ptr = native.pointee.attached_pic.data else { return nil }
+    return UnsafeBufferPointer(start: ptr, count: Int(native.pointee.attached_pic.size))
+  }
 }
